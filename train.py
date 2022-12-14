@@ -14,12 +14,16 @@ import torch.optim as optim
 from torch.utils.data import IterableDataset, DataLoader, get_worker_info
 import matplotlib.pyplot as plt
 
+
+## time the process
 def get_time_dif(start_time):
     """get the running time"""
     end_time = time.time()
     time_dif = end_time - start_time
     return timedelta(seconds=int(round(time_dif)))
 
+
+## set up the u,i,j triplet for BPR framework
 class GetTriplePair(IterableDataset):
     def __init__(self, item_size, user_list, pair, shuffle, num_epochs):
         self.item_size = item_size
@@ -64,10 +68,11 @@ class GetTriplePair(IterableDataset):
             j = np.random.randint(self.item_size)
         return u, i, j
 
-
+## chunk to define matrix factorization part
 class MF(nn.Module):
     def __init__(self, user_size, item_size, dim, reg, reg_adv, eps):
         super().__init__()
+        ##init the embedding for U and I
         self.W = nn.Parameter(torch.empty(user_size, dim))  # User embedding
         self.H = nn.Parameter(torch.empty(item_size, dim))  # Item embedding
         nn.init.xavier_normal_(self.W.data)
@@ -82,6 +87,7 @@ class MF(nn.Module):
         self.update_i = None
         self.update_j = None
 
+## forward cal
     def forward(self, u, i, j, epoch):
         """Return loss value.
 
@@ -94,24 +100,37 @@ class MF(nn.Module):
         Returns:
             torch.FloatTensor
         """
-
+        ##u,i,j respectively
         u = self.W[u, :]
         i = self.H[i, :]
         j = self.H[j, :]
+
+        ## Enables this Tensor to have their grad populated during backward(), convert any non-leaf tensor into a leaf tensor,
+        ##https://stackoverflow.com/questions/73698041/how-retain-grad-in-pytorch-works-i-found-its-position-changes-the-grad-result
         u.retain_grad()
         u_clone = u.data.clone()
         i.retain_grad()
         i_clone = i.data.clone()
         j.retain_grad()
         j_clone = j.data.clone()
+
+        ## mf, dot product of user with pos/neg item
         x_ui = torch.mul(u, i).sum(dim=1)
         x_uj = torch.mul(u, j).sum(dim=1)
 
+
+        #similar to clip value, find diff between ui and uj
         x_uij =torch.clamp(x_ui - x_uj,min=-80.0,max=1e8)
+        #logsigmoid this is equivalent to equation 1 in the paper (classic loss of bpr)
         log_prob = F.logsigmoid(x_uij).sum()
+        # regularization = lambda * l2 norm of u, i, j
         regularization = self.reg * (u.norm(dim=1).pow(2).sum() + i.norm(dim=1).pow(2).sum() + j.norm(dim=1).pow(2).sum())
+
+        ## original bpr loss
         loss = -log_prob + regularization
 
+
+        ## add adv training after a certain number of epochs, here is the part which we add hypernet module
         if epoch not in range(args.epochs, args.adv_epoch + args.epochs):
             """Normal training"""
             loss.backward()
@@ -130,11 +149,12 @@ class MF(nn.Module):
             grad_i = i.grad
             grad_j = j.grad
 
-            # Construct adversarial perturbation
+            # Construct adversarial perturbation based on gradient of loss function, and normalize it with epsilon * norm
+            # this would be the part we change in defining delta, delta = HPN (phi)
             if grad_u is not None:
                 delta_u = nn.functional.normalize(grad_u, p=2, dim=1, eps=self.eps)
             else:
-                delta_u = torch.rand(u.size())
+                delta_u = torch.rand(u.size()) ## why we have to do this if grad is none?
             if grad_i is not None:
                 delta_i = nn.functional.normalize(grad_i, p=2, dim=1, eps=self.eps)
             else:
@@ -144,7 +164,7 @@ class MF(nn.Module):
             else:
                 delta_j = torch.rand(j.size())
 
-            # Add adversarial perturbation to embeddings
+            # Add adversarial perturbation to embeddings, now we have q+delta, p+delta
             x_ui_adv = torch.mul(u + delta_u, i + delta_i).sum(dim=1)
             x_uj_adv = torch.mul(u + delta_u, j + delta_j).sum(dim=1)
             x_uij_adv = torch.clamp(x_ui_adv - x_uj_adv,min=-80.0,max=1e8)
@@ -156,7 +176,7 @@ class MF(nn.Module):
 
             return adv_loss
 
-
+## similar set of with batch size = 512
 def evaluate_k(user_emb, item_emb, train_user_list, test_user_list, klist, batch=512):
     """Compute HR and NDCG at k.
 
@@ -300,12 +320,12 @@ if __name__ == '__main__':
                         type=int,
                         default=0,
                         help="Seed (For reproducability)")
-    # Model
+    # Model, default embedding size = 64
     parser.add_argument('--dim',
                         type=int,
                         default=64,
                         help="Dimension for embedding")
-    # Optimizer
+    # Optimizer, learning rate is different @ 0.00025
     parser.add_argument('--lr',
                         type=float,
                         default= 0.00025,
@@ -335,6 +355,8 @@ if __name__ == '__main__':
                         type=str,
                         default=os.path.join('output', 'bpr.pt'),
                         help="File path for model")
+    #original paper has default regularization coefficient and epsilon = 1 and 0.5 respectively
+
     parser.add_argument('--reg_adv', type=float, default=1,
                         help='Regularization for adversarial loss')
     parser.add_argument('--adv_epoch', type=int, default=400,
@@ -344,4 +366,3 @@ if __name__ == '__main__':
                         help='Epsilon for adversarial weights.')
     args = parser.parse_args()
     main(args)
-
