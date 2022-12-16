@@ -150,6 +150,7 @@ class MF(nn.Module):
 
             # should we calculate based on gradient of the adv_loss instead of the loss function?, originally, computed based on loss function
             loss.backward(retain_graph=True) ## need to retain graph here so as to we can backprop the adv_loss
+            ##recheck this
             grad_u = u.grad
             grad_i = i.grad
             grad_j = j.grad
