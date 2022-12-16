@@ -25,6 +25,7 @@ def get_time_dif(start_time):
 
 ## set up the u,i,j triplet for BPR framework
 class GetTriplePair(IterableDataset):
+    # for ml-1m we load in 3760 item 6040 user and 994169 train pair
     def __init__(self, item_size, user_list, pair, shuffle, num_epochs):
         self.item_size = item_size
         self.user_list = user_list
@@ -61,6 +62,7 @@ class GetTriplePair(IterableDataset):
         return result
 
     def _example(self, idx):
+        # in a train pair, format = (u,i), j = a random item which does not exist in user u's list of items
         u = self.pair[idx][0]
         i = self.pair[idx][1]
         j = np.random.randint(self.item_size)
@@ -145,7 +147,9 @@ class MF(nn.Module):
             """
             # Backward to get grads
             # this would be the part we change in defining delta, delta = HPN (phi)
-            loss.backward(retain_graph=True)
+
+            # should we calculate based on gradient of the adv_loss instead of the loss function?, originally, computed based on loss function
+            loss.backward(retain_graph=True) ## need to retain graph here so as to we can backprop the adv_loss
             grad_u = u.grad
             grad_i = i.grad
             grad_j = j.grad
@@ -154,7 +158,7 @@ class MF(nn.Module):
             if grad_u is not None:
                 delta_u = nn.functional.normalize(grad_u, p=2, dim=1, eps=self.eps)
             else:
-                delta_u = torch.rand(u.size()) ## why we have to do this if grad is none?
+                delta_u = torch.rand(u.size())
             if grad_i is not None:
                 delta_i = nn.functional.normalize(grad_i, p=2, dim=1, eps=self.eps)
             else:
@@ -260,26 +264,27 @@ def main(args):
 
     # Create dataset, model, optimizer
     dataset = GetTriplePair(item_size, train_user_list, train_pair, True, args.epochs)
-<<<<<<< HEAD
     loader = DataLoader(dataset, batch_size=args.batch_size) ## load in batch
-=======
-
-    # load batch of 512 item pairs
-    loader = DataLoader(dataset, batch_size=args.batch_size)
->>>>>>> f813d295a86171d3f0b2abfd68722d13a3f916f1
     model = MF(user_size, item_size, args.dim, args.reg, args.reg_adv, args.eps)
+
+    #this only optimize wrt embeddings, no delta included like the original paper?
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     # Training
     start_time = time.time()
     eval_best_loss = float('inf')
+
+    ##zero_grad: zeroes the grad attribute of all the parameters passed to the optimizer upon construction
     optimizer.zero_grad()
     epoch = 0
     HR_history = []
     NDCG_history = []
+    #loader has batch size of 512
     for u, i, j in loader:
         if epoch in range(args.epochs + args.adv_epoch):
             loss = model(u, i, j, epoch)
+
+            ##  updates the value of those parameters according to the optimization strategy implemented by the specific optimizer.
             optimizer.step()
             HR_list, NDCG_list = evaluate_k(model.W.detach(),
                                                                model.H.detach(),
@@ -312,14 +317,14 @@ def main(args):
     ax1 = fig_HR.add_subplot(111)
     plt.ylabel('HR@100')
     plt.xlabel('Epoch')
-    plt.title('Yelp')
+    plt.title(args.data[0:args.data.index('.')])
     ax1.plot(range(len(HR_history)), HR_history, c=np.array([255, 71, 90]) / 255.)
     plt.show()
     fig_P = plt.figure(edgecolor='blue')
     ax1 = fig_P.add_subplot(111)
     plt.ylabel('NDCG@100')
     plt.xlabel('Epoch')
-    plt.title('Yelp')
+    plt.title(args.data[0:args.data.index('.')])
     ax1.plot(range(len(NDCG_history)), NDCG_history, c=np.array([255, 71, 90]) / 255.)
     plt.show()
 
@@ -355,9 +360,12 @@ if __name__ == '__main__':
                         type=int,
                         default=1000,
                         help="Number of epoch during training")
+
+                        ## default batch_size = 2000, is this different from the 512 batch size given above?
     parser.add_argument('--batch_size',
                         type=int,
-                        default=2000,
+                        #defaul in the paper is 512, author coded as 2000 --> change here
+                        default=512,
                         help="Batch size in one iteration")
     parser.add_argument('--verbose',
                         type=int,
@@ -375,10 +383,13 @@ if __name__ == '__main__':
 
     parser.add_argument('--reg_adv', type=float, default=1,
                         help='Regularization for adversarial loss')
-    parser.add_argument('--adv_epoch', type=int, default=1000,
+    parser.add_argument('--adv_epoch', type=int, default=400,
                         help='Add APR in epoch X, when adv_epoch is 0, it\'s equivalent to pure AMF.\n '
                              'And when adv_epoch is larger than epochs, it\'s equivalent to pure MF model. ')
     parser.add_argument('--eps', type=float, default=0.5,
                         help='Epsilon for adversarial weights.')
     args = parser.parse_args()
     main(args)
+
+
+##python train.py --data preprocessed/yelp.pickle

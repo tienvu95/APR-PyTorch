@@ -143,7 +143,7 @@ class MF(nn.Module):
                     2.Calculate APR loss
             """
             # Backward to get grads
-            loss.backward(retain_graph=True)
+            # loss.backward(retain_graph=True)
 
             #how should we? or the model tune this
             grad_u = HyperNetwork(u)
@@ -360,7 +360,7 @@ if __name__ == '__main__':
                         help="File path for model")
     parser.add_argument('--reg_adv', type=float, default=1,
                         help='Regularization for adversarial loss')
-    parser.add_argument('--adv_epoch', type=int, default=1000,
+    parser.add_argument('--adv_epoch', type=int, default=400,
                         help='Add APR in epoch X, when adv_epoch is 0, it\'s equivalent to pure AMF.\n '
                              'And when adv_epoch is larger than epochs, it\'s equivalent to pure MF model. ')
     parser.add_argument('--eps', type=float, default=0.5,
