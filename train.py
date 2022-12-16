@@ -260,13 +260,9 @@ def main(args):
 
     # Create dataset, model, optimizer
     dataset = GetTriplePair(item_size, train_user_list, train_pair, True, args.epochs)
-<<<<<<< HEAD
-    loader = DataLoader(dataset, batch_size=args.batch_size) ## load in batch
-=======
 
-    # load batch of 512 item pairs
+    # load batch of 512 item triplets
     loader = DataLoader(dataset, batch_size=args.batch_size)
->>>>>>> f813d295a86171d3f0b2abfd68722d13a3f916f1
     model = MF(user_size, item_size, args.dim, args.reg, args.reg_adv, args.eps)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
