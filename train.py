@@ -265,13 +265,9 @@ def main(args):
 
     # Create dataset, model, optimizer
     dataset = GetTriplePair(item_size, train_user_list, train_pair, True, args.epochs)
-<<<<<<< HEAD
-    loader = DataLoader(dataset, batch_size=args.batch_size) ## load in batch
-=======
 
     # load batch of 512 item triplets
     loader = DataLoader(dataset, batch_size=args.batch_size)
->>>>>>> d069b5473999096854370a6659ba3cebae902ecb
     model = MF(user_size, item_size, args.dim, args.reg, args.reg_adv, args.eps)
 
     #this only optimize wrt embeddings, no delta included like the original paper?
