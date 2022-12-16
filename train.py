@@ -195,9 +195,15 @@ def evaluate_k(user_emb, item_emb, train_user_list, test_user_list, klist, batch
     # Calculate max k value
     max_k = max(klist)
     result = None
+
+    # no iteration = user_num / batch size (which is 512)
     for i in range(0, user_emb.shape[0], batch):
 
         # Construct mask for each batch
+
+        #new_ones returns a Tensor of size size filled with 1
+
+        # size of the mask vector = (min of batch or user embed) * item+embed
         mask = user_emb.new_ones([min([batch, user_emb.shape[0]-i]), item_emb.shape[0]])
         for j in range(batch):
             if i+j >= user_emb.shape[0]:
@@ -214,6 +220,8 @@ def evaluate_k(user_emb, item_emb, train_user_list, test_user_list, klist, batch
         _, cur_result = torch.topk(cur_result, k=max_k, dim=1)
         result = cur_result if result is None else torch.cat((result, cur_result), dim=0)
 
+
+    ## basically this chunk collects the results
     result = result.cpu()
 
     # Sort indice and get HR_NDCG_topk
@@ -252,7 +260,13 @@ def main(args):
 
     # Create dataset, model, optimizer
     dataset = GetTriplePair(item_size, train_user_list, train_pair, True, args.epochs)
+<<<<<<< HEAD
     loader = DataLoader(dataset, batch_size=args.batch_size) ## load in batch
+=======
+
+    # load batch of 512 item pairs
+    loader = DataLoader(dataset, batch_size=args.batch_size)
+>>>>>>> f813d295a86171d3f0b2abfd68722d13a3f916f1
     model = MF(user_size, item_size, args.dim, args.reg, args.reg_adv, args.eps)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
