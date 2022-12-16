@@ -100,7 +100,7 @@ class MF(nn.Module):
         Returns:
             torch.FloatTensor
         """
-        ##u,i,j respectively
+        ##u,i,j respectively, each is a vector of dim embedding (default = 64)
         u = self.W[u, :]
         i = self.H[i, :]
         j = self.H[j, :]
@@ -126,7 +126,7 @@ class MF(nn.Module):
         # regularization = lambda * l2 norm of u, i, j
         regularization = self.reg * (u.norm(dim=1).pow(2).sum() + i.norm(dim=1).pow(2).sum() + j.norm(dim=1).pow(2).sum())
 
-        ## original bpr loss
+        ## original bpr loss,
         loss = -log_prob + regularization
 
 
@@ -144,13 +144,13 @@ class MF(nn.Module):
                     4.Calculate APR loss
             """
             # Backward to get grads
+            # this would be the part we change in defining delta, delta = HPN (phi)
             loss.backward(retain_graph=True)
             grad_u = u.grad
             grad_i = i.grad
             grad_j = j.grad
 
             # Construct adversarial perturbation based on gradient of loss function, and normalize it with epsilon * norm
-            # this would be the part we change in defining delta, delta = HPN (phi)
             if grad_u is not None:
                 delta_u = nn.functional.normalize(grad_u, p=2, dim=1, eps=self.eps)
             else:
@@ -167,11 +167,13 @@ class MF(nn.Module):
             # Add adversarial perturbation to embeddings, now we have q+delta, p+delta
             x_ui_adv = torch.mul(u + delta_u, i + delta_i).sum(dim=1)
             x_uj_adv = torch.mul(u + delta_u, j + delta_j).sum(dim=1)
+
+            # find difference between pos and neg item, then clip value
             x_uij_adv = torch.clamp(x_ui_adv - x_uj_adv,min=-80.0,max=1e8)
 
-            # Calculate APR loss
+            # Calculate APR loss with logsigmoid
             log_prob = F.logsigmoid(x_uij_adv).sum()
-            adv_loss = self.reg_adv *(-log_prob) + loss
+            adv_loss = self.reg_adv *(-log_prob) + loss # this is adversarial loss (equation 4 in paper)
             adv_loss.backward()
 
             return adv_loss
@@ -250,7 +252,7 @@ def main(args):
 
     # Create dataset, model, optimizer
     dataset = GetTriplePair(item_size, train_user_list, train_pair, True, args.epochs)
-    loader = DataLoader(dataset, batch_size=args.batch_size)
+    loader = DataLoader(dataset, batch_size=args.batch_size) ## load in batch
     model = MF(user_size, item_size, args.dim, args.reg, args.reg_adv, args.eps)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
@@ -359,7 +361,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--reg_adv', type=float, default=1,
                         help='Regularization for adversarial loss')
-    parser.add_argument('--adv_epoch', type=int, default=400,
+    parser.add_argument('--adv_epoch', type=int, default=1000,
                         help='Add APR in epoch X, when adv_epoch is 0, it\'s equivalent to pure AMF.\n '
                              'And when adv_epoch is larger than epochs, it\'s equivalent to pure MF model. ')
     parser.add_argument('--eps', type=float, default=0.5,

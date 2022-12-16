@@ -12,7 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import IterableDataset, DataLoader, get_worker_info
-from hypernetwork_modules import HyperNetwork
+from hypernetwork_module import HyperNetwork
 import matplotlib.pyplot as plt
 
 
@@ -143,25 +143,27 @@ class MF(nn.Module):
                     2.Calculate APR loss
             """
             # Backward to get grads
-            # loss.backward(retain_graph=True)
-            # grad_u = u.grad
-            # grad_i = i.grad
-            # grad_j = j.grad
+            loss.backward(retain_graph=True)
+
+            #how should we? or the model tune this
+            grad_u = HyperNetwork(u)
+            grad_i = HyperNetwork(i)
+            grad_j = HyperNetwork(j)
 
             # Construct adversarial perturbation based on gradient of loss function, and normalize it with epsilon * norm
             # this would be the
-            # if grad_u is not None:
-            #     delta_u = nn.functional.normalize(grad_u, p=2, dim=1, eps=self.eps)
-            # else:
-            #     delta_u = torch.rand(u.size()) ## why we have to do this if grad is none?
-            # if grad_i is not None:
-            #     delta_i = nn.functional.normalize(grad_i, p=2, dim=1, eps=self.eps)
-            # else:
-            #     delta_i = torch.rand(i.size())
-            # if grad_j is not None:
-            #     delta_j = nn.functional.normalize(grad_j, p=2, dim=1, eps=self.eps)
-            # else:
-            #     delta_j = torch.rand(j.size())
+            if grad_u is not None:
+                delta_u = nn.functional.normalize(grad_u, p=2, dim=1, eps=self.eps)
+            else:
+                delta_u = torch.rand(u.size()) ## why we have to do this if grad is none?
+            if grad_i is not None:
+                delta_i = nn.functional.normalize(grad_i, p=2, dim=1, eps=self.eps)
+            else:
+                delta_i = torch.rand(i.size())
+            if grad_j is not None:
+                delta_j = nn.functional.normalize(grad_j, p=2, dim=1, eps=self.eps)
+            else:
+                delta_j = torch.rand(j.size())
 
             # Add adversarial perturbation to embeddings, now we have q+delta, p+delta
 
@@ -172,7 +174,7 @@ class MF(nn.Module):
 
             # Calculate APR loss
             log_prob = F.logsigmoid(x_uij_adv).sum()
-            adv_loss = self.reg_adv *(-log_prob) + loss
+            adv_loss = self.reg_adv *(-log_prob) + loss # this is adversarial loss (equation 4 in paper)
             adv_loss.backward()
 
             return adv_loss
@@ -358,7 +360,7 @@ if __name__ == '__main__':
                         help="File path for model")
     parser.add_argument('--reg_adv', type=float, default=1,
                         help='Regularization for adversarial loss')
-    parser.add_argument('--adv_epoch', type=int, default=400,
+    parser.add_argument('--adv_epoch', type=int, default=1000,
                         help='Add APR in epoch X, when adv_epoch is 0, it\'s equivalent to pure AMF.\n '
                              'And when adv_epoch is larger than epochs, it\'s equivalent to pure MF model. ')
     parser.add_argument('--eps', type=float, default=0.5,
