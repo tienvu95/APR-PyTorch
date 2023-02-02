@@ -133,56 +133,28 @@ class MF(nn.Module):
 
         loss.backward()
         return loss
-        ## add adv training after a certain number of epochs, here is the part which we add hypernet module
-        # if epoch not in range(args.epochs, args.adv_epoch + args.epochs):
-        #     """Normal training"""
-        #     loss.backward()
-        #     return loss
-        #
-        # else:
-        #     """Adversarial training:
-        #             1.Backward to get grads
-        #             2.Construct adversarial perturbation
-        #             3.Add adversarial perturbation to embeddings
-        #             4.Calculate APR loss
-        #     """
-        #     # Backward to get grads
-        #     # this would be the part we change in defining delta, delta = HPN (phi)
-        #
-        #     # should we calculate based on gradient of the adv_loss instead of the loss function?, originally, computed based on loss function
-        #     loss.backward(retain_graph=True) ## need to retain graph here so as to we can backprop the adv_loss
-        #     ##recheck this
-        #     grad_u = u.grad
-        #     grad_i = i.grad
-        #     grad_j = j.grad
-        #
-        #     # Construct adversarial perturbation based on gradient of loss function, and normalize it with epsilon * norm
-        #     if grad_u is not None:
-        #         delta_u = nn.functional.normalize(grad_u, p=2, dim=1, eps=self.eps)
-        #     else:
-        #         delta_u = torch.rand(u.size())
-        #     if grad_i is not None:
-        #         delta_i = nn.functional.normalize(grad_i, p=2, dim=1, eps=self.eps)
-        #     else:
-        #         delta_i = torch.rand(i.size())
-        #     if grad_j is not None:
-        #         delta_j = nn.functional.normalize(grad_j, p=2, dim=1, eps=self.eps)
-        #     else:
-        #         delta_j = torch.rand(j.size())
-        #
-        #     # Add adversarial perturbation to embeddings, now we have q+delta, p+delta
-        #     x_ui_adv = torch.mul(u + delta_u, i + delta_i).sum(dim=1)
-        #     x_uj_adv = torch.mul(u + delta_u, j + delta_j).sum(dim=1)
-        #
-        #     # find difference between pos and neg item, then clip value
-        #     x_uij_adv = torch.clamp(x_ui_adv - x_uj_adv,min=-80.0,max=1e8)
-        #
-        #     # Calculate APR loss with logsigmoid
-        #     log_prob = F.logsigmoid(x_uij_adv).sum()
-        #     adv_loss = self.reg_adv *(-log_prob) + loss # this is adversarial loss (equation 4 in paper)
-        #     adv_loss.backward()
-        #
-        #     return adv_loss
+
+
+
+#to do, define an adversary that predict the group of user/item
+#can be as simple as a MLP, last layer activated by sigmoid to return probablity item i belong to each genre
+
+def adversary()
+
+
+#to do, pass tuning data into a BPR with user_emb and item_emb
+
+def fair_reprogramming(user_emb, item_emb
+
+
+
+
+
+
+
+
+
+
 
 ## similar set of with batch size = 512
 def evaluate_k(user_emb, item_emb, train_user_list, test_user_list, klist, batch=512):
