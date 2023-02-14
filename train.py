@@ -102,7 +102,7 @@ class MF(nn.Module):
         Returns:
             torch.FloatTensor
         """
-        ##u,i,j respectively, each is a vector of dim embedding (default = 64)
+        ##u,i,j respectively, each is a vector of dim embedding (default = 64). After BPR trained, W,H will be frozen and fed into tuning
         u = self.W[u, :]
         i = self.H[i, :]
         j = self.H[j, :]

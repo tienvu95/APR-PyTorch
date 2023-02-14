@@ -13,6 +13,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import IterableDataset, DataLoader, get_worker_info
 import matplotlib.pyplot as plt
+from pathlib import Path
+
 
 
 ## time the process
@@ -83,8 +85,8 @@ class MF(nn.Module):
         self.user_size = user_size
         self.item_size = item_size
         self.dim = dim
-        self.reg_adv = reg_adv
-        self.eps = eps
+        # self.reg_adv = reg_adv
+        # self.eps = eps
         self.update_u = None
         self.update_i = None
         self.update_j = None
@@ -133,26 +135,6 @@ class MF(nn.Module):
 
         loss.backward()
         return loss
-
-
-
-#to do, define an adversary that predict the group of user/item
-#can be as simple as a MLP, last layer activated by sigmoid to return probablity item i belong to each genre
-
-def adversary()
-
-
-#to do, pass tuning data into a BPR with user_emb and item_emb
-
-def fair_reprogramming(user_emb, item_emb
-
-
-
-
-
-
-
-
 
 
 
@@ -303,6 +285,13 @@ def main(args):
     plt.title(args.data[0:args.data.index('.')])
     ax1.plot(range(len(NDCG_history)), NDCG_history, c=np.array([255, 71, 90]) / 255.)
     plt.show()
+    MODEL_PATH = Path("models")
+    MODEL_PATH.mkdir(parents=True, exist_ok=True)
+    MODEL_NAME = "01_pytorch_workflow_model_1.pth"
+    MODEL_SAVE_PATH = MODEL_PATH / MODEL_NAME
+    print(f"Saving model to: {MODEL_SAVE_PATH}")
+    torch.save(obj=model.state_dict(), # only saving the state_dict() only saves the models learned parameters
+           f=MODEL_SAVE_PATH)
 
 
 if __name__ == '__main__':
@@ -334,7 +323,7 @@ if __name__ == '__main__':
     # Training
     parser.add_argument('--epochs',
                         type=int,
-                        default=1000,
+                        default=100,
                         help="Number of epoch during training")
 
                         ## default batch_size = 2000, is this different from the 512 batch size given above?
