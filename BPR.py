@@ -283,7 +283,7 @@ def main(args):
     epoch = 0
     HR_history = []
     NDCG_history = []
-    #loader has batch size of 512
+    #loader has batch size of 512. In each batch there are 3 tensors of u i j accordingly
     for u, i, j in loader:
         if epoch in range(args.epochs + args.adv_epoch):
             loss = model(u, i, j, epoch)
