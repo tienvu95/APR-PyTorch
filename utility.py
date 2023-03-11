@@ -101,20 +101,23 @@ def user_recall(new_user_prediction, test, item_idd_genre_list, key_genre):
                 test_dict[g] += 1.0
 
     for i in range(top4):
-        item_id = int(new_user_prediction[i][0])
-        if item_id in test:
-            gl = item_idd_genre_list[item_id]
-            if i < top3:
-                for g in gl:
-                    count_10_dict[g] += 1.0
-                if i < top2:
+        if new_user_prediction[i] == []:
+            continue
+        else:
+            item_id = int(new_user_prediction[i][0])
+            if item_id in test:
+                gl = item_idd_genre_list[item_id]
+                if i < top3:
                     for g in gl:
-                        count_5_dict[g] += 1.0
-                    if i < top1:
+                        count_10_dict[g] += 1.0
+                    if i < top2:
                         for g in gl:
-                            count_1_dict[g] += 1.0
-            for g in gl:
-                count_15_dict[g] += 1.0
+                            count_5_dict[g] += 1.0
+                        if i < top1:
+                            for g in gl:
+                                count_1_dict[g] += 1.0
+                for g in gl:
+                    count_15_dict[g] += 1.0
 
     # recall@k
     for k in key_genre:
