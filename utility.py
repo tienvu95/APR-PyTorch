@@ -101,23 +101,20 @@ def user_recall(new_user_prediction, test, item_idd_genre_list, key_genre):
                 test_dict[g] += 1.0
 
     for i in range(top4):
-        if new_user_prediction[i] == []:
-            break
-        else:
-            item_id = int(new_user_prediction[i][0])
-            if item_id in test:
-                gl = item_idd_genre_list[item_id]
-                if i < top3:
-                    for g in gl:
-                        count_10_dict[g] += 1.0
-                    if i < top2:
-                        for g in gl:
-                            count_5_dict[g] += 1.0
-                        if i < top1:
-                            for g in gl:
-                                count_1_dict[g] += 1.0
+        item_id = int(new_user_prediction[1][i])
+        if item_id in test:
+            gl = item_idd_genre_list[item_id]
+            if i < top3:
                 for g in gl:
-                    count_15_dict[g] += 1.0
+                    count_10_dict[g] += 1.0
+                if i < top2:
+                    for g in gl:
+                        count_5_dict[g] += 1.0
+                    if i < top1:
+                        for g in gl:
+                            count_1_dict[g] += 1.0
+            for g in gl:
+                count_15_dict[g] += 1.0
 
     # recall@k
     for k in key_genre:
@@ -153,8 +150,10 @@ def test_model_all(Rec, test_df, train_df):
         u_test = (test_df.loc[test_df['user_id'] == u, 'item_id']).tolist()
         u_pred = Rec[u, :]
 
-        top15_item_idx_no_train = np.argpartition(u_pred, -15)[-15:]
-        top15 = (np.array([top15_item_idx_no_train, u_pred[top15_item_idx_no_train]])).T
+
+        #while they combine 2 tensors here?
+        top15_item_idx_no_train = np.argpartition(u_pred, -15)[-15:] #take out top 15 movies only
+        top15 = (np.array([top15_item_idx_no_train, u_pred[top15_item_idx_no_train]])).T #u_pred[top15_item_idx_no_train]= np.partition(u_pred, -1 * top4)[-1 * top4:]
         top15 = sorted(top15, key=itemgetter(1), reverse=True)
 
         # calculate the metrics
@@ -313,7 +312,7 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
 
         # calculate ranking probability
         rank = 1
-        for r in top15:
+        for r in top15:#top 15 items sorted 
             gl = item_idd_genre_list[int(r[0])]
             for g in gl:
                 if g in key_genre:
@@ -418,7 +417,7 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
 
 def relative_std(dictionary):
     tmp = []
-    for key, value in sorted(dictionary.iteritems(), key = lambda x: x[0]):
+    for key, value in sorted(dictionary.items(), key = lambda x: x[0]):
         tmp.append(value)
     rstd = np.std(tmp) / (np.mean(tmp) + 1e-10)
     return rstd
