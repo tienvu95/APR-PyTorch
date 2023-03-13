@@ -102,7 +102,7 @@ def user_recall(new_user_prediction, test, item_idd_genre_list, key_genre):
 
     for i in range(top4):
         if new_user_prediction[i] == []:
-            continue
+            break
         else:
             item_id = int(new_user_prediction[i][0])
             if item_id in test:
@@ -277,13 +277,17 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
         test_count[k] = 0.0
 
     for u in range(num_user):
+        #for each user list all the items that he likes, mark that to -10000
         like_item = (train_df.loc[train_df['user_id'] == u, 'item_id']).tolist()
         Rec[u, like_item] = -100000.0
 
     for u in range(num_user):  # iterate each user
+        #extract item that user actually match during testing, extract the prediction
         u_test = (test_df.loc[test_df['user_id'] == u, 'item_id']).tolist()
         u_pred = Rec[u, :]
 
+
+        #get top 15 items
         top15_item_idx_no_train = np.argpartition(u_pred, -1 * top4)[-1 * top4:]
         top15 = (np.array([top15_item_idx_no_train, u_pred[top15_item_idx_no_train]])).T
         top15 = sorted(top15, key=itemgetter(1), reverse=True)
