@@ -312,7 +312,7 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
 
         # calculate ranking probability
         rank = 1
-        for r in top15:#top 15 items sorted 
+        for r in top15:#top 15 items sorted
             gl = item_idd_genre_list[int(r[0])]
             for g in gl:
                 if g in key_genre:
