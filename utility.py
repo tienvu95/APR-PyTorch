@@ -73,6 +73,8 @@ def user_precision_recall_ndcg(new_user_prediction, test):
 
 # calculate precision@k, recall@k, NDCG@k, where k = 1,5,10,15
 def user_recall(new_user_prediction, test, item_idd_genre_list, key_genre):
+
+    #initialize dictionary to store result
     test_dict = dict()
     count_1_dict = dict()
     count_5_dict = dict()
@@ -83,6 +85,7 @@ def user_recall(new_user_prediction, test, item_idd_genre_list, key_genre):
     recall_10_dict = dict()
     recall_15_dict = dict()
 
+    #initialize dictionary to store result, for each key genre
     for k in key_genre:
         test_dict[k] = 0.0
         count_1_dict[k] = 0.0
@@ -94,36 +97,47 @@ def user_recall(new_user_prediction, test, item_idd_genre_list, key_genre):
         recall_10_dict[k] = 0.0
         recall_15_dict[k] = 0.0
 
+
+    #for each item in the test list, if the item has the key genre concerned --> count and append to the test_dict dictionary
+    #test dict will return the number of movie in each key genre for each test list (list of movies associated with an user in the test data)
     for t in test:
         gl = item_idd_genre_list[t]
         for g in gl:
             if g in key_genre:
                 test_dict[g] += 1.0
 
+    #for each item in top 15, if they are in the test set, and belong to one of the key genre specified,
+    #we append them to the dictionary that track no. of movie in key_genre that make it to topk
     for i in range(top4):
         item_id = int(new_user_prediction[1][i])
-        if item_id in test:
+        if item_id in u_test:
             gl = item_idd_genre_list[item_id]
-            if i < top3:
+            if i < 10:
                 for g in gl:
-                    count_10_dict[g] += 1.0
-                if i < top2:
+                    if g in key_genre:
+                        count_10_dict[g] += 1.0
+                if i < 5:
                     for g in gl:
-                        count_5_dict[g] += 1.0
-                    if i < top1:
+                        if g in key_genre:
+                            count_5_dict[g] += 1.0
+                    if i < 1:
                         for g in gl:
-                            count_1_dict[g] += 1.0
+                            if g in key_genre:
+                                count_1_dict[g] += 1.0
             for g in gl:
-                count_15_dict[g] += 1.0
+                if g in key_genre:
+                    count_15_dict[g] += 1.0
 
     # recall@k
     for k in key_genre:
         l = test_dict[k]
+        #check the number of key genre movie in the top k list, if a key genre does not appear, then set l = 1 and tmp = -1
         if l == 0:
             tmp = -1
             l = 1
         else:
             tmp = 0
+        #recall of a genre = number of movie in topk belong to that genre over total number of movie belongs to that genre in test list
         recall_1_dict[k] = count_1_dict[k] / l + tmp
         recall_5_dict[k] = count_5_dict[k] / l + tmp
         recall_10_dict[k] = count_10_dict[k] / l + tmp
@@ -312,31 +326,33 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
 
         # calculate ranking probability
         rank = 1
-        for r in top15:#top 15 items sorted
-            gl = item_idd_genre_list[int(r[0])]
+        for r in top15[0]:#top 15 items sorted
+        # extract the genre of each topk movie
+            gl = item_idd_genre_list[int(r)]
             for g in gl:
                 if g in key_genre:
-                    genre_rank_count[g][rank - 1] += 1.0
+                    #if the movie belongs to a key genre ==> add 1 to the dict
+                    genre_rank_count[g][rank - 1] += 1.0 #size = no. of items
                     rank_count[rank - 1] += 1.0
                     if rank <= top4:
-                        tmp_top15_dict[g] += 1.0
+                        tmp_top15_dict[g] += 1.0 #no of movie in top15 for each key genre
                         if rank <= top3:
                             tmp_top10_dict[g] += 1.0
                             if rank <= top2:
                                 tmp_top5_dict[g] += 1.0
                                 if rank <= top1:
                                     tmp_top1_dict[g] += 1.0
-            rank += 1
+            rank += 1 #15 rank
         for k in key_genre:
             top1_dict[k] += tmp_top1_dict[k]
             top5_dict[k] += tmp_top5_dict[k]
             top10_dict[k] += tmp_top10_dict[k]
             top15_dict[k] += tmp_top15_dict[k]
-            avg_top1_dict[k] += (1.0 * tmp_top1_dict[k] / user_genre_count[u][k])
+            avg_top1_dict[k] += (1.0 * tmp_top1_dict[k] / user_genre_count[u][k]) #what exactly is user_genre_count
             avg_top5_dict[k] += (1.0 * tmp_top5_dict[k] / user_genre_count[u][k])
             avg_top10_dict[k] += (1.0 * tmp_top10_dict[k] / user_genre_count[u][k])
             avg_top15_dict[k] += (1.0 * tmp_top15_dict[k] / user_genre_count[u][k])
-            tmp_top1_dict[k] = 0.0
+            tmp_top1_dict[k] = 0.0#reset tmp dict
             tmp_top5_dict[k] = 0.0
             tmp_top10_dict[k] = 0.0
             tmp_top15_dict[k] = 0.0
@@ -345,6 +361,7 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
 
     # compute the average recall for different genres, and print out the results
     for k in key_genre:
+        #count1_dict track no. of movie in key_genre that make it to topk (in topk list predicted)
         count1_dict[k] /= test_count[k]
         count5_dict[k] /= test_count[k]
         count10_dict[k] /= test_count[k]
