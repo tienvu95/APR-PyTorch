@@ -110,7 +110,7 @@ def user_recall(new_user_prediction, test, item_idd_genre_list, key_genre):
     #we append them to the dictionary that track no. of movie in key_genre that make it to topk
     for i in range(top4):
         item_id = int(new_user_prediction[1][i])
-        if item_id in u_test:
+        if item_id in test:
             gl = item_idd_genre_list[item_id]
             if i < 10:
                 for g in gl:
@@ -348,11 +348,11 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
             top5_dict[k] += tmp_top5_dict[k]
             top10_dict[k] += tmp_top10_dict[k]
             top15_dict[k] += tmp_top15_dict[k]
-            avg_top1_dict[k] += (1.0 * tmp_top1_dict[k] / user_genre_count[u][k]) #what exactly is user_genre_count
-            avg_top5_dict[k] += (1.0 * tmp_top5_dict[k] / user_genre_count[u][k])
+            avg_top1_dict[k] += (1.0 * tmp_top1_dict[k] / user_genre_count[u][k]) #user_genre_count = no. of more in each key_genre that the user has not intereacted with in training
+            avg_top5_dict[k] += (1.0 * tmp_top5_dict[k] / user_genre_count[u][k]) #no. of uninteracted items that appears in topj kust if yser
             avg_top10_dict[k] += (1.0 * tmp_top10_dict[k] / user_genre_count[u][k])
             avg_top15_dict[k] += (1.0 * tmp_top15_dict[k] / user_genre_count[u][k])
-            tmp_top1_dict[k] = 0.0#reset tmp dict
+            tmp_top1_dict[k] = 0.0 #reset tmp dict
             tmp_top5_dict[k] = 0.0
             tmp_top10_dict[k] = 0.0
             tmp_top15_dict[k] = 0.0
