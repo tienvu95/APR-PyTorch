@@ -311,6 +311,8 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
             count_1_tmp_dict, count_5_tmp_dict, count_10_tmp_dict, count_15_tmp_dict, test_tmp_dict\
                 = user_recall(top15, u_test, item_idd_genre_list, key_genre)
             for k in key_genre:
+                #for each item in top 15, if they are in the test set, and belong to one of the key genre specified,
+                #we append them to the dictionary that track no. of movie in key_genre that make it to topk
                 count1_dict[k] += count_1_tmp_dict[k]
                 count5_dict[k] += count_5_tmp_dict[k]
                 count10_dict[k] += count_10_tmp_dict[k]
@@ -318,6 +320,7 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
                 test_count[k] += test_tmp_dict[k]
                 if recall_1_tmp_dict[k] == -1:
                     continue
+                #recall of a genre = number of movie in topk belong to that genre over total number of movie belongs to that genre in test list
                 recall1_dict[k] += recall_1_tmp_dict[k]
                 recall5_dict[k] += recall_5_tmp_dict[k]
                 recall10_dict[k] += recall_10_tmp_dict[k]
@@ -344,12 +347,12 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
                                     tmp_top1_dict[g] += 1.0
             rank += 1 #15 rank
         for k in key_genre:
-            top1_dict[k] += tmp_top1_dict[k]
+            top1_dict[k] += tmp_top1_dict[k] #no of movie in key_genre k in topk for an user u
             top5_dict[k] += tmp_top5_dict[k]
             top10_dict[k] += tmp_top10_dict[k]
             top15_dict[k] += tmp_top15_dict[k]
             avg_top1_dict[k] += (1.0 * tmp_top1_dict[k] / user_genre_count[u][k]) #user_genre_count = no. of more in each key_genre that the user has not intereacted with in training
-            avg_top5_dict[k] += (1.0 * tmp_top5_dict[k] / user_genre_count[u][k]) #no. of uninteracted items that appears in topj kust if yser
+            avg_top5_dict[k] += (1.0 * tmp_top5_dict[k] / user_genre_count[u][k]) #fraction of movies for each key genre appear in top K/ total movies of that genre that user u has not interacted with before
             avg_top10_dict[k] += (1.0 * tmp_top10_dict[k] / user_genre_count[u][k])
             avg_top15_dict[k] += (1.0 * tmp_top15_dict[k] / user_genre_count[u][k])
             tmp_top1_dict[k] = 0.0 #reset tmp dict
@@ -357,7 +360,8 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
             tmp_top10_dict[k] = 0.0
             tmp_top15_dict[k] = 0.0
 
-            genre_to_be_rank[k] += user_genre_count[u][k]
+            genre_to_be_rank[k] += user_genre_count[u][k] #total number of movies that all users have not interacted with during training
+            #user_genre_count = no. of movies in each key_genre that the user has not intereacted with in training
 
     # compute the average recall for different genres, and print out the results
     for k in key_genre:
@@ -365,8 +369,8 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
         count1_dict[k] /= test_count[k]
         count5_dict[k] /= test_count[k]
         count10_dict[k] /= test_count[k]
-        count15_dict[k] /= test_count[k]
-        recall1_dict[k] /= user_count_dict[k]
+        count15_dict[k] /= test_count[k]    #test dict will return the number of movie in each key genre for each test list (list of movies associated with an user in the test data)
+        recall1_dict[k] /= user_count_dict[k] #no of user interact with at least an item from a key_genre (divided for average recall for user)
         recall5_dict[k] /= user_count_dict[k]
         recall10_dict[k] /= user_count_dict[k]
         recall15_dict[k] /= user_count_dict[k]
@@ -376,7 +380,7 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
     print('# \t\t\tRecall@%d\tRecall@%d\tRecall@%d\tRecall@%d' % (top1, top2, top3, top4))
     for k in key_genre:
         print('# ' + k + '\t\t%.5f\t\t%.5f\t\t%.5f\t\t%.5f' % (count1_dict[k], count5_dict[k], count10_dict[k], count15_dict[k]))
-    recall1_std = relative_std(count1_dict)
+    recall1_std = relative_std(count1_dict) #count1_dict = % movie in a key_genre in test list make it to top1
     recall5_std = relative_std(count5_dict)
     recall10_std = relative_std(count10_dict)
     recall15_std = relative_std(count15_dict)
@@ -388,7 +392,7 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
     for k in key_genre:
         print('# ' + k + '\t\t%.5f\t\t%.5f\t\t%.5f\t\t%.5f' % (
             recall1_dict[k], recall5_dict[k], recall10_dict[k], recall15_dict[k]))
-    recall1_std_user = relative_std(recall1_dict)
+    recall1_std_user = relative_std(recall1_dict)#recall of a genre = number of movie in topk belong to that genre over total number of movie belongs to that genre in test list
     recall5_std_user = relative_std(recall5_dict)
     recall10_std_user = relative_std(recall10_dict)
     recall15_std_user = relative_std(recall15_dict)
@@ -397,12 +401,12 @@ def ranking_analysis(Rec, test_df, train_df, key_genre, item_idd_genre_list, use
 
     # calculate the average genre ranking probability across users, and calculate system-level ranking probability
     for k in key_genre:
-        avg_top1_dict[k] /= num_user
+        avg_top1_dict[k] /= num_user#avg probability in top k of a item belonging to a key genre for each user
         avg_top5_dict[k] /= num_user
         avg_top10_dict[k] /= num_user
         avg_top15_dict[k] /= num_user
 
-        top1_dict[k] /= genre_to_be_rank[k]
+        top1_dict[k] /= genre_to_be_rank[k] #total movies belongs to a keygenre belongs to top k /#total number of movies that all users have not interacted with during training
         top5_dict[k] /= genre_to_be_rank[k]
         top10_dict[k] /= genre_to_be_rank[k]
         top15_dict[k] /= genre_to_be_rank[k]
