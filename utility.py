@@ -30,27 +30,28 @@ def user_precision_recall_ndcg(new_user_prediction, test):
 
     # compute the number of true positive items at top k
     count_1, count_5, count_10, count_15 = 0, 0, 0, 0
-    for i in range(15):
-        if i == 0 and new_user_prediction[i][0] in test:
+    for i in range(15):# if the item in test set fall to top 1,5,10,15 positions --> add to the the count_1 number
+        if i == 0 and new_user_prediction[0][i] in test:
             count_1 = 1.0
-        if i < 5 and new_user_prediction[i][0] in test:
+        if i < 5 and new_user_prediction[0][i] in test:
             count_5 += 1.0
-        if i < 10 and new_user_prediction[i][0] in test:
+        if i < 10 and new_user_prediction[0][i] in test:
             count_10 += 1.0
-        if new_user_prediction[i][0] in test:
+        if new_user_prediction[0][i] in test:
             count_15 += 1.0
             dcg_list.append(1)
         else:
             dcg_list.append(0)
+            #dcg list returns the topk list (for 15 items), position with 1 means there is an item in test list makes it to top-i position
 
     # calculate NDCG@k
-    idcg_list = [1 for i in range(len(test))]
+    idcg_list = [1 for i in range(len(test))] #generate a list idcg with length = utest and all value = 1
     ndcg_tmp_1 = NDCG_at_k(dcg_list, idcg_list, 1)
     ndcg_tmp_5 = NDCG_at_k(dcg_list, idcg_list, 5)
     ndcg_tmp_10 = NDCG_at_k(dcg_list, idcg_list, 10)
     ndcg_tmp_15 = NDCG_at_k(dcg_list, idcg_list, 15)
 
-    # precision@k
+    # precision@k no of test items in top k divided by no. of relevant items
     precision_1 = count_1
     precision_5 = count_5 / 5.0
     precision_10 = count_10 / 10.0
@@ -59,7 +60,7 @@ def user_precision_recall_ndcg(new_user_prediction, test):
     l = len(test)
     if l == 0:
         l = 1
-    # recall@k
+    # recall@k % movie in the test set that make it to topk
     recall_1 = count_1 / l
     recall_5 = count_5 / l
     recall_10 = count_10 / l
@@ -215,7 +216,7 @@ def negative_sample(train_df, num_user, num_item, neg):
             tmp_neg = len(unlike_item)
         else:
             tmp_neg = neg
-        for l in like_item:
+        for l in like_item: #for like item, take out neg (default) negative items to compare
             neg_samples = (np.random.choice(unlike_item, size=tmp_neg, replace=False)).tolist()
             user += [i] * tmp_neg
             item_pos += [l] * tmp_neg
